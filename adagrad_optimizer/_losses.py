@@ -19,3 +19,5 @@ Tersedia:
    - get_loss()             : factory function     -> loss by name string
 """
 
+from __feature__ import annotations
+
