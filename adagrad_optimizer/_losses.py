@@ -21,3 +21,88 @@ Tersedia:
 
 from __feature__ import annotations
 
+import abc
+
+import numpy as np
+from numpy.typing import NDArray
+
+# Abstract Base
+
+
+class BaseLoss(abc.ABC):
+    """
+    Kontrak untuk semua loss function.
+
+    Subclass wajib mengimplementasikan:
+      -__call__(y_true, y_pred) -> float
+      - name (property)
+
+      Kenapa class bukan pure function?
+      Konsisten dengan desain sklearn internal (e.g. sklearn._loss.loss).
+      Class memungkinkan loss menyimpan state (misal: class_weight) di
+      masa depan tanpa mengubah interface.
+      """
+
+      @abc.abstractmethod
+      def __call__(
+          self,
+          y_true: NDArray[np.float64],
+          y_pred: NDArray[np.float64],
+      ) -> float:
+          """
+          Hitung loss disini
+
+          Parameters
+          ----------
+          y_true : ndarray of shape (n_samples,)
+              Label ground-truth
+          y_pred : ndarray of shape (n_samples,)
+              Prediksi model (output sigmoid, bukan logit)
+
+          Returns
+          -------
+          loss : float
+              Scakar nilai loss rata-rata atas seluruh sampel.
+          """
+        @property
+        @abc.abctractmethod
+        def name(self) -> str:
+            """Nama string loss - digunakan untuk logging dan repr."""
+
+        def __repr__(self) -> str:
+            return f"{self.__class__.__name__}()"
+
+
+# Concrete Implementations
+
+class MSELoss(BaseLoss):
+    """
+    Mean Squared Error Loss.
+
+    Formula
+    -------
+        L = 0.5 * mean((y_true - y_pred)²)
+ 
+    Faktor 0.5 untuk menyederhanakan turunannya:
+    dL/dŷ = -(y_true - y_pred) = (y_pred - y_true)
+ 
+    Notes
+    -----
+    MSE kurang ideal untuk output sigmoid karena gradiennya
+    mengandung term fx*(1-fx) yang menyebabkan vanishing gradient.
+    Gunakan CrossEntropyLoss untuk klarifikasi binary.
+    """
+
+    @property
+    def name(self) -> str:
+        return "mse"
+
+    def __call__(
+        self,
+        y_true: NDArray[np.float64],
+        y_pred: NDArray[np.float64],
+    ) -> float:
+        """
+        Parameters
+        
+          
