@@ -104,5 +104,17 @@ class MSELoss(BaseLoss):
     ) -> float:
         """
         Parameters
+        ----------
+        y_true : ndarray of shape (n_samples,)
+        y_pred : ndarray of shape (n_samples,)
+            Nilai prediksi dalam range [0, 1] (output sigmoid).
+
+        Returns
+        -------
+        loss : float
+        """
+        y_true = np.asarray(y_true, dtype=np.float64)
+        y_pred = np.asarray(y_pred, dtype=np.float64)
+        return float(0.5 * np.mean((y_true - y_pred) ** 2))
         
           
