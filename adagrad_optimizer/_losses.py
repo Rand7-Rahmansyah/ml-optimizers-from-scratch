@@ -116,5 +116,25 @@ class MSELoss(BaseLoss):
         y_true = np.asarray(y_true, dtype=np.float64)
         y_pred = np.asarray(y_pred, dtype=np.float64)
         return float(0.5 * np.mean((y_true - y_pred) ** 2))
+
+
+class CrossEntropyLoss(BaseLoss):
+    """
+    Binary Cross-Entropy Loss.
+
+    Formula
+    -------
+    L = -mean(y_true * log(y_pred) + (1 - y_true) * log(1 - y_pred))
+
+    Notes
+    -----
+    L = -mean(y * log(ŷ))
+    ini hanya benar untuk y ∈ {0, 1} dengan asumsi term negatif
+    diabaikan. Implementasi ini menggunakan formula lengkap yang
+    yang lebih stabil secara numerik dan benar secara matematis.
+
+        Clipping pada y_pred mencegah log(0) = -inf.
+    """
+
         
           
