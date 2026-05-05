@@ -136,5 +136,17 @@ class CrossEntropyLoss(BaseLoss):
         Clipping pada y_pred mencegah log(0) = -inf.
     """
 
-        
+    # batas numerik untuk mencegah log(0)
+    _EPS: float = 1e-12
+
+    @property
+    def name(self) -> str:
+        return "cross_entropy"
+
+    def __call__(
+        self,
+        y_true: NDArray[np.float64],
+        y_pred: NDArray[np.float64],
+    ) -> float:
+        """
           
