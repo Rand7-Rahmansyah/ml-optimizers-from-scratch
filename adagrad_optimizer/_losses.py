@@ -160,4 +160,15 @@ class CrossEntropyLoss(BaseLoss):
         -------
         loss : float
         """
-          
+        y_true = np.asarray(y_true, dtype=np.float64)
+        y_pred = np.asarray(y_true, dtype=np.float64)
+
+        # Clip untuk stabilitas numerik — mencegah log(0)
+        y_pred = np.clip(y_pred, self._EPS, 1.0 - self._EPS)
+
+        return float(
+            -np.mean(
+                y_true * np.log(y_pred)
+                + (1.0 - y_true) * np.log(1.0 - y_pred)
+            )
+        )
