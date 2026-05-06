@@ -149,4 +149,15 @@ class CrossEntropyLoss(BaseLoss):
         y_pred: NDArray[np.float64],
     ) -> float:
         """
+        Parameters
+        ----------
+        y_true : ndarray of shape (n_samples,)
+            Label biner {0, 1},
+        y_pred : ndarray of shape (n_samples,)
+            Probabilitas prediksi dalam range (0,1).
+
+        Returns
+        -------
+        loss : float
+        """
           
