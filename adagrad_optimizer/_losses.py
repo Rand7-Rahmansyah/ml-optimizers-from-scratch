@@ -172,3 +172,55 @@ class CrossEntropyLoss(BaseLoss):
                 + (1.0 - y_true) * np.log(1.0 - y_pred)
             )
         )
+
+
+# Factory
+
+# Registry — tambah entry di sini jika ada loss baru
+_LOSS_REGISTRY: dict[str, type[BaseLoss]] = {
+  "mse": MSELoss
+  "cross_entropy": CrossEntropyLoss,
+}
+
+VALID_LOSSES: frozenset[str] = frozenset(_LOSS_REGISTRY.keys())
+
+
+def get_loss(loss: str) -> BaseLoss:
+    """
+    Factory function — return instance loss berdasarkan nama string.
+
+    Digunakan oleh _model.py agar tidak ada hard-coded string di loop
+    training:
+
+        loss_fn = get_loss(self.loss)   # sekali di fit()
+        loss_val = loss_fn(y_true, fx)  # di setiap epoch
+
+    Parameters
+    ----------
+    loss : str
+        Nama loss. pilihan: {"mse", "cross_entropy"}.
+
+    Returns
+    -------
+    loss_fn : BaseLoss instance
+
+    Raises
+    ------
+    ValueError
+        jika loss string tidak dikenali.
+
+    examples
+    --------
+    >>> fn = get_loss("mse")
+    >>> fn
+    MSELoss()
+    >>> import numpy as np
+    >>> fn(np.array([1, 0, 1]), np.array([0.9, 0.1, 0.8]))
+    0.009...
+    """
+    if loss not in _LOSS_REGISTRY:
+        raise ValueError(
+            f"loss={loss!r} tidak dikenali. "
+            f"Pilihan valid: {sorted(VALID_LOSSES)}"
+        )
+    return _LOSS_REGISTRY[loss]()
