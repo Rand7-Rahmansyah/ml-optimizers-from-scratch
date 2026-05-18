@@ -1,6 +1,4 @@
 """
-_base.py
---------
 Abstract base class untuk AdagradClassifier.
 
 Kontrak sklearn yang dipenuhi:
