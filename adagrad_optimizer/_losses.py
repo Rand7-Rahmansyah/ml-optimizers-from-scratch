@@ -1,79 +1,83 @@
 """
 _losses.py
 ----------
-
 Callable loss function classes untuk AdagradClassifier.
 
 Desain:
   - Setiap loss adalah callable class dengan __call__(y_true, y_pred) -> float
-  - Gradient TIDAK dihitung disini - ada di activations.py (separation of concern)
-  - Semua class mewarisi BeseLoss untuk kontrak yang konsisten
+  - Gradient TIDAK dihitung di sini — ada di _activations.py (separation of concerns)
+  - Semua class mewarisi BaseLoss untuk kontrak yang konsisten
 
 Penggunaan di _model.py:
-     loss_fn = get_loss("mse")
-     loss_val = loss_fn(y_true, y_pred)  # scalar
+    loss_fn = get_loss("mse")
+    loss_val = loss_fn(y_true, y_pred)   # scalar
 
 Tersedia:
-   - MSELoss                : Mean Squared Error  -> 0.5 * mean((y - ŷ)²)
-   - CrossEntropyLoss       : Binary Cross-Entropy -> -mean(y * log(ŷ))
-   - get_loss()             : factory function     -> loss by name string
+  - MSELoss          : Mean Squared Error  → 0.5 * mean((y - ŷ)²)
+  - CrossEntropyLoss : Binary Cross-Entropy → -mean(y * log(ŷ))
+  - get_loss()       : factory function    → loss by name string
 """
 
-from __feature__ import annotations
+from __future__ import annotations
 
 import abc
 
 import numpy as np
 from numpy.typing import NDArray
 
-# Abstract Base
 
+# ======================================================================
+# Abstract Base
+# ======================================================================
 
 class BaseLoss(abc.ABC):
     """
     Kontrak untuk semua loss function.
 
     Subclass wajib mengimplementasikan:
-      -__call__(y_true, y_pred) -> float
+      - __call__(y_true, y_pred) -> float
       - name (property)
 
-      Kenapa class bukan pure function?
-      Konsisten dengan desain sklearn internal (e.g. sklearn._loss.loss).
-      Class memungkinkan loss menyimpan state (misal: class_weight) di
-      masa depan tanpa mengubah interface.
-      """
+    Kenapa class bukan pure function?
+    Konsisten dengan desain sklearn internal (e.g. sklearn._loss.loss).
+    Class memungkinkan loss menyimpan state (misal: class_weight) di
+    masa depan tanpa mengubah interface.
+    """
 
-      @abc.abstractmethod
-      def __call__(
-          self,
-          y_true: NDArray[np.float64],
-          y_pred: NDArray[np.float64],
-      ) -> float:
-          """
-          Hitung loss disini
+    @abc.abstractmethod
+    def __call__(
+        self,
+        y_true: NDArray[np.float64],
+        y_pred: NDArray[np.float64],
+    ) -> float:
+        """
+        Hitung nilai loss.
 
-          Parameters
-          ----------
-          y_true : ndarray of shape (n_samples,)
-              Label ground-truth
-          y_pred : ndarray of shape (n_samples,)
-              Prediksi model (output sigmoid, bukan logit)
+        Parameters
+        ----------
+        y_true : ndarray of shape (n_samples,)
+            Label ground-truth.
+        y_pred : ndarray of shape (n_samples,)
+            Prediksi model (output sigmoid, bukan logit).
 
-          Returns
-          -------
-          loss : float
-              Scakar nilai loss rata-rata atas seluruh sampel.
-          """
-        @property
-        @abc.abctractmethod
-        def name(self) -> str:
-            """Nama string loss - digunakan untuk logging dan repr."""
+        Returns
+        -------
+        loss : float
+            Scalar nilai loss rata-rata atas seluruh sampel.
+        """
 
-        def __repr__(self) -> str:
-            return f"{self.__class__.__name__}()"
+    @property
+    @abc.abstractmethod
+    def name(self) -> str:
+        """Nama string loss — digunakan untuk logging dan repr."""
+
+    def __repr__(self) -> str:
+        return f"{self.__class__.__name__}()"
 
 
+# ======================================================================
 # Concrete Implementations
+# ======================================================================
 
 class MSELoss(BaseLoss):
     """
@@ -81,16 +85,17 @@ class MSELoss(BaseLoss):
 
     Formula
     -------
-        L = 0.5 * mean((y_true - y_pred)²)
- 
+    L = 0.5 * mean((y_true - y_pred)²)
+
     Faktor 0.5 untuk menyederhanakan turunannya:
     dL/dŷ = -(y_true - y_pred) = (y_pred - y_true)
- 
+
     Notes
     -----
     MSE kurang ideal untuk output sigmoid karena gradiennya
     mengandung term fx*(1-fx) yang menyebabkan vanishing gradient.
-    Gunakan CrossEntropyLoss untuk klarifikasi binary.
+    Gunakan CrossEntropyLoss untuk klasifikasi binary.
+    MSELoss disertakan untuk kompatibilitas dengan kode original IBM.
     """
 
     @property
@@ -128,15 +133,16 @@ class CrossEntropyLoss(BaseLoss):
 
     Notes
     -----
-    L = -mean(y * log(ŷ))
-    ini hanya benar untuk y ∈ {0, 1} dengan asumsi term negatif
+    Kode original IBM hanya menggunakan term pertama:
+        L = -mean(y * log(ŷ))
+    Ini hanya benar untuk y ∈ {0, 1} dengan asumsi term negatif
     diabaikan. Implementasi ini menggunakan formula lengkap yang
-    yang lebih stabil secara numerik dan benar secara matematis.
+    lebih stabil secara numerik dan benar secara matematis.
 
-        Clipping pada y_pred mencegah log(0) = -inf.
+    Clipping pada y_pred mencegah log(0) = -inf.
     """
 
-    # batas numerik untuk mencegah log(0)
+    # Batas numerik untuk mencegah log(0)
     _EPS: float = 1e-12
 
     @property
@@ -152,16 +158,16 @@ class CrossEntropyLoss(BaseLoss):
         Parameters
         ----------
         y_true : ndarray of shape (n_samples,)
-            Label biner {0, 1},
+            Label biner {0, 1}.
         y_pred : ndarray of shape (n_samples,)
-            Probabilitas prediksi dalam range (0,1).
+            Probabilitas prediksi dalam range (0, 1).
 
         Returns
         -------
         loss : float
         """
         y_true = np.asarray(y_true, dtype=np.float64)
-        y_pred = np.asarray(y_true, dtype=np.float64)
+        y_pred = np.asarray(y_pred, dtype=np.float64)
 
         # Clip untuk stabilitas numerik — mencegah log(0)
         y_pred = np.clip(y_pred, self._EPS, 1.0 - self._EPS)
@@ -174,12 +180,14 @@ class CrossEntropyLoss(BaseLoss):
         )
 
 
+# ======================================================================
 # Factory
+# ======================================================================
 
 # Registry — tambah entry di sini jika ada loss baru
 _LOSS_REGISTRY: dict[str, type[BaseLoss]] = {
-  "mse": MSELoss
-  "cross_entropy": CrossEntropyLoss,
+    "mse": MSELoss,
+    "cross_entropy": CrossEntropyLoss,
 }
 
 VALID_LOSSES: frozenset[str] = frozenset(_LOSS_REGISTRY.keys())
@@ -198,7 +206,7 @@ def get_loss(loss: str) -> BaseLoss:
     Parameters
     ----------
     loss : str
-        Nama loss. pilihan: {"mse", "cross_entropy"}.
+        Nama loss. Pilihan: {"mse", "cross_entropy"}.
 
     Returns
     -------
@@ -207,9 +215,9 @@ def get_loss(loss: str) -> BaseLoss:
     Raises
     ------
     ValueError
-        jika loss string tidak dikenali.
+        Jika loss string tidak dikenali.
 
-    examples
+    Examples
     --------
     >>> fn = get_loss("mse")
     >>> fn
