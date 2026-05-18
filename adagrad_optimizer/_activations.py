@@ -1,6 +1,4 @@
 """
-_activations.py
----------------
 Callable activation function classes untuk AdagradClassifier.
 
 Desain:
