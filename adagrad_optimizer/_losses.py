@@ -1,6 +1,4 @@
 """
-_losses.py
-----------
 Callable loss function classes untuk AdagradClassifier.
 
 Desain:
